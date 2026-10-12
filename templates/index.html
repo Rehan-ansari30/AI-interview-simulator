@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Interview Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#1a8f63;
+  --green-dark:#0f5c40;
+  --green-ink:#0d3b2c;
+  --green-soft:#e3f3ec;
+  --bg:#eef8f3;
+  --line:#d5e7de;
+  --muted:#5d7a6d;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:'Inter',system-ui,sans-serif;color:var(--green-ink);
+  background:linear-gradient(180deg,#f2fbf7 0%,#e8f5ee 100%);min-height:100vh;
+}
+.hidden{display:none !important}
+
+/* ---------- Header ---------- */
+.app-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:22px 24px 18px;
+}
+.brand{display:flex;align-items:center;gap:16px}
+.logo{
+  width:54px;height:54px;border-radius:12px;background:var(--green);
+  display:grid;place-items:center;box-shadow:0 4px 10px rgba(26,143,99,.3);
+}
+.brand h1{margin:0;font-size:26px;font-weight:700;color:var(--green-ink)}
+.brand-subtitle{margin:2px 0 0;font-size:15px;color:var(--muted)}
+
+.user-area{position:relative}
+.menu-button{
+  display:flex;align-items:center;gap:10px;background:none;border:0;cursor:pointer;
+  font:500 16px 'Inter',sans-serif;color:var(--green-ink);padding:6px 8px;border-radius:8px;
+}
+.menu-button:hover{background:rgba(26,143,99,.08)}
+.ico-user{color:var(--green)}
+.online-dot{width:10px;height:10px;border-radius:50%;background:#22b573}
+.menu-panel{
+  position:absolute;right:0;top:calc(100% + 6px);min-width:210px;background:#fff;
+  border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px rgba(15,92,64,.15);
+  padding:6px;z-index:20;
+}
+.menu-item{
+  display:block;width:100%;text-align:left;background:none;border:0;cursor:pointer;
+  padding:11px 14px;border-radius:8px;font:500 15px 'Inter',sans-serif;color:var(--green-ink);
+}
+.menu-item:hover{background:var(--green-soft)}
+.logout-item{color:#c0392b}
+
+/* ---------- Layout ---------- */
+main{display:block;padding:0 20px 40px;max-width:1500px;margin:0 auto}
+.sidebar{display:none}
+
+/* show the sidebar only when the user is logged in (#nav visible) */
+body:has(#nav:not(.hidden)) main{display:grid;grid-template-columns:330px 1fr;gap:10px;align-items:start}
+body:has(#nav:not(.hidden)) .sidebar{display:block;grid-column:1;grid-row:1 / span 10}
+body:has(#nav:not(.hidden)) main > section,
+body:has(#nav:not(.hidden)) main > .error{grid-column:2;min-width:0}
+
+.sidebar{
+  background:linear-gradient(180deg,#eaf6f0,#e4f2eb);border-radius:18px;
+  padding:38px 24px;min-height:850px;position:relative;overflow:hidden;
+}
+.side-user{
+  display:flex;align-items:center;gap:18px;padding-bottom:26px;
+  border-bottom:1px solid var(--line);
+  font-size:25px;font-weight:600;
+}
+.avatar{width:58px;height:58px;border-radius:50%;background:var(--green);display:grid;place-items:center;flex:none}
+.side-list{list-style:none;margin:0;padding:0}
+.side-list li{
+  display:flex;align-items:center;gap:18px;padding:18px 0;
+  border-bottom:1px solid var(--line);font-size:16px;font-weight:500;
+}
+.side-list li:last-child{border-bottom:0}
+.side-list svg{color:var(--green);flex:none}
+
+/* ---------- Panel (white card) ---------- */
+.panel{
+  background:#fff;border-radius:18px;padding:34px 36px 40px;margin-top:10px;
+  box-shadow:0 6px 24px rgba(15,92,64,.07);max-width:1100px;
+}
+#s-auth{max-width:460px;margin:40px auto}
+.panel h2{margin:0 0 20px;font-size:34px;font-weight:700}
+.panel h3{font-size:18px;margin:22px 0 6px}
+.h-ico{display:flex;align-items:center;gap:14px}
+.h-ico svg{color:var(--green);flex:none}
+.h-ico.h-sm{font-size:26px !important;margin-top:28px !important}
+.divider{border:0;border-top:1px solid var(--line);margin:34px 0 30px}
+
+/* ---------- Choice buttons ---------- */
+.choices{display:flex;flex-wrap:wrap;gap:20px;margin-bottom:6px}
+.choice{
+  background:#f4fbf8;border:1.5px solid var(--line);border-radius:14px;
+  padding:20px 42px;font:600 18px 'Inter',sans-serif;color:var(--green-ink);cursor:pointer;
+  box-shadow:0 2px 6px rgba(15,92,64,.06);transition:.15s;
+}
+#levels .choice{padding:16px 40px;font-size:17px;font-weight:500;border-radius:14px}
+.choice:hover{background:var(--green-soft);border-color:var(--green)}
+.choice.selected,.choice.active,.choice.sel{
+  background:var(--green);color:#fff;border-color:var(--green);
+}
+
+.choice.is-picked,#roles button.is-picked,#levels button.is-picked{
+  background:var(--green) !important;color:#fff !important;border-color:var(--green) !important;
+  box-shadow:0 4px 12px rgba(26,143,99,.35);
+}
+
+/* ---------- Inputs ---------- */
+input,select,textarea{
+  display:block;width:100%;padding:18px 20px;margin:0 0 20px;
+  border:1.5px solid var(--line);border-radius:12px;background:#fff;
+  font:500 17px 'Inter',sans-serif;color:var(--green-ink);outline:none;
+}
+input::placeholder,textarea::placeholder{color:#8aa196;font-weight:400}
+input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(26,143,99,.15)}
+#apikey,#model{background:#f6faf8}
+#model{background:#fff}
+.select-wrap{margin-top:4px}
+select{
+  appearance:none;-webkit-appearance:none;cursor:pointer;margin-bottom:22px;
+  background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%230d3b2c' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 18px center;
+}
+
+/* ---------- Buttons ---------- */
+button{font-family:'Inter',sans-serif}
+#btn-login,#btn-reg,#btn-code,#btn-reset,#btn-submit,#btn-next,#btn-again,#btn-start{
+  background:var(--green);color:#fff;border:0;border-radius:12px;
+  padding:16px 30px;font-size:18px;font-weight:600;cursor:pointer;
+  box-shadow:0 4px 12px rgba(26,143,99,.3);transition:.15s;
+}
+#btn-login:hover,#btn-reg:hover,#btn-start:hover,#btn-submit:hover,#btn-next:hover{background:var(--green-dark)}
+.btn-primary{display:inline-flex;align-items:center;gap:12px;padding:15px 30px !important;margin-top:6px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.ghost{
+  background:#fff !important;color:var(--green) !important;border:1.5px solid var(--green) !important;
+  box-shadow:none !important;border-radius:12px;padding:14px 24px;font-size:16px;font-weight:600;cursor:pointer;
+}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+.link{color:var(--green);cursor:pointer;font-weight:500}
+.note{color:var(--muted);font-size:14px}
+.error{color:#c0392b;font-weight:500;text-align:center}
+
+/* ---------- Interview / report extras ---------- */
+.bar{height:8px;background:var(--green-soft);border-radius:99px;overflow:hidden;margin-bottom:14px}
+#progress{height:100%;width:0;background:var(--green);transition:width .3s}
+#qmeta{color:var(--muted);margin:0 0 6px}
+#cam{width:100%;max-width:360px;border-radius:12px;margin-bottom:14px}
+#result{margin-top:20px;padding:18px;background:var(--green-soft);border-radius:12px}
+.overall strong{font-size:44px;color:var(--green)}
+.overall span{margin-left:12px;color:var(--muted)}
+
+/* ---------- Mobile ---------- */
+@media (max-width:900px){
+  body:has(#nav:not(.hidden)) main{grid-template-columns:1fr}
+  .sidebar{min-height:0;padding:20px}
+  .panel{padding:22px 18px}
+  .choice{padding:14px 22px;font-size:16px}
+  .panel h2{font-size:26px}
+}
+
+
+/* ---------- Back button ---------- */
+.back-btn{
+  display:inline-flex;align-items:center;gap:8px;margin:0 0 22px;padding:10px 18px;
+  background:#fff;color:var(--green);border:1.5px solid var(--green);border-radius:10px;
+  font:600 15px 'Inter',sans-serif;cursor:pointer;transition:.15s;
+}
+.back-btn:hover{background:var(--green);color:#fff}
+
+/* ---------- Sidebar clickable + modal ---------- */
+.side-item{cursor:pointer;transition:.15s}
+.side-list li.side-item:hover{color:var(--green);padding-left:8px}
+.side-user.side-item:hover{opacity:.8}
+.modal{position:fixed;inset:0;background:rgba(13,59,44,.45);display:grid;place-items:center;z-index:50;padding:20px}
+.modal-box{background:#fff;border-radius:18px;max-width:520px;width:100%;padding:30px 32px;position:relative;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.modal-box h3{margin:0 0 8px;font-size:24px;color:var(--green)}
+.modal-box p{margin:0 0 12px;color:var(--muted)}
+.modal-box ul{margin:0 0 20px;padding-left:20px;line-height:1.8}
+.modal-x{position:absolute;right:16px;top:10px;background:none;border:0;font-size:30px;cursor:pointer;color:var(--muted)}
+.modal-box .btn-primary{padding:12px 22px !important;font-size:16px !important;margin-top:0}
+.modal-box .ghost{padding:12px 22px}
+#modal-cta{background:var(--green);color:#fff;border:0;border-radius:12px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(26,143,99,.3)}
+#modal-cta:hover{background:var(--green-dark)}
+
+/* ---------- Interview History page ---------- */
+.page-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.page-top .back-btn{margin:0}
+#btn-new.back-top{
+  display:inline-flex;align-items:center;gap:8px;margin:0;
+  padding:10px 18px !important;border-radius:10px !important;font:600 15px 'Inter',sans-serif !important;
+}
+#btn-new.back-top:hover{background:var(--green) !important;color:#fff !important}
+
+.hist-card{
+  position:relative;border:1.5px solid var(--line);border-radius:14px;background:#fbfdfc;
+  padding:18px 20px;margin-bottom:16px;line-height:1.6;
+}
+.hist-flat{position:relative;padding-bottom:64px}
+/* Delete button: bottom-right corner of each history card */
+.hist-card .btn-delete,.hist-flat .btn-delete{
+  position:absolute;right:20px;bottom:18px;margin:0;
+  padding:10px 18px !important;border-radius:10px !important;font:600 15px 'Inter',sans-serif !important;
+}
+.btn-delete:hover{background:var(--green) !important;color:#fff !important}
+.btn-view{
+  background:var(--green);color:#fff;border:0;border-radius:10px;padding:10px 18px;
+  font:600 15px 'Inter',sans-serif;cursor:pointer;margin:8px 8px 0 0;
+}
+.btn-view:hover{background:var(--green-dark)}
+@media (max-width:600px){
+  .hist-card .btn-delete,.hist-flat .btn-delete{position:static;margin-top:10px;display:block}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= HEADER ================= -->
+<header class="app-header">
+  <div class="brand">
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="8" width="16" height="11" rx="3" fill="#fff" stroke="none"/>
+        <circle cx="9" cy="13" r="1.5" fill="#1a8f63" stroke="none"/>
+        <circle cx="15" cy="13" r="1.5" fill="#1a8f63" stroke="none"/>
+        <path d="M12 8V5"/><circle cx="12" cy="4" r="1" fill="#fff"/>
+        <path d="M2.5 12.5v3M21.5 12.5v3"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Interview Room</h1>
+      <p class="brand-subtitle">AI Powered Interview Simulator</p>
+    </div>
+  </div>
+
+  <div id="nav" class="user-area hidden">
+    <button id="btn-menu" class="menu-button" type="button" aria-label="Open menu" aria-expanded="false">
+      <svg class="ico-user" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z"/></svg>
+      <span id="who" class="username"></span>
+      <span class="online-dot"></span>
+      <svg class="chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+
+    <div id="menu-panel" class="menu-panel hidden">
+      <button id="btn-hist" type="button" class="menu-item">📋 Interview History</button>
+      <button id="btn-new-menu" type="button" class="menu-item">➕ New Interview</button>
+      <button id="btn-logout" type="button" class="menu-item logout-item">↪ Logout</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ============ LEFT SIDEBAR (visible only after login) ============ -->
+  <aside class="sidebar">
+    <div class="side-user side-item" data-info="profile" role="button" tabindex="0" title="View Interview History">
+      <div class="avatar">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="#fff"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z"/></svg>
+      </div>
+      <span id="who-side"></span>
+    </div>
+    <ul class="side-list">
+      <li class="side-item" data-info="prepare" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 20h20"/></svg>
+        Prepare for your dream job
+      </li>
+      <li class="side-item" data-info="confidence" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>
+        Build your confidence
+      </li>
+      <li class="side-item" data-info="feedback" role="button" tabindex="0">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><rect x="3" y="13" width="4" height="8" rx="1"/><rect x="10" y="9" width="4" height="12" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/></svg>
+        Get AI-powered feedback
+      </li>
+    </ul>
+  </aside>
+
+  <section id="s-auth" class="panel">
+    <div id="f-login">
+      <h2>Login</h2>
+      <input id="l-login" placeholder="Email or User ID"><input id="l-pass" type="password" placeholder="Password">
+      <button id="btn-login">Login</button>
+      <p><a class="link" data-go="f-reg">Create a new account</a> | <a class="link" data-go="f-forgot">Forgot password?</a></p>
+    </div>
+    <div id="f-reg" class="hidden">
+      <h2>Register</h2>
+      <input id="r-uid" placeholder="User ID (letters, numbers, _)"><input id="r-email" type="email" placeholder="Email">
+      <input id="r-pass" type="password" placeholder="Password (min 6)">
+      <button id="btn-reg">Create account</button>
+      <p><a class="link" data-go="f-login">Already registered? Login</a></p>
+    </div>
+    <div id="f-forgot" class="hidden">
+      <h2>Forgot password</h2>
+      <input id="fg-email" type="email" placeholder="Registered email">
+      <button id="btn-code">Get reset code</button>
+      <p class="note">For this demo, the reset code is displayed in the server terminal.</p>
+      <input id="fg-code" placeholder="6-digit code"><input id="fg-pass" type="password" placeholder="New password">
+      <button id="btn-reset">Reset password</button>
+      <p><a class="link" data-go="f-login">Back to login</a></p>
+    </div>
+  </section>
+
+  <!-- ================= SETUP ================= -->
+  <section id="s-setup" class="panel hidden">
+    <button type="button" class="back-btn" data-back="login">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Back to Login
+    </button>
+    <h2 class="h-ico">
+      <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M9 4h6a2 2 0 0 1 2 2v1h3a2 2 0 0 1 2 2v3H2V9a2 2 0 0 1 2-2h3V6a2 2 0 0 1 2-2zm0 2v1h6V6z"/><path d="M2 14h8v1.5h4V14h8v4a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>
+      Choose a job role
+    </h2>
+    <div id="roles" class="choices"></div>
+
+    <hr class="divider">
+
+    <h2 class="h-ico h-sm">
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm2 5v1.6h2V8zm4 0v1.6h6V8zm-4 3.2v1.6h2v-1.6zm4 0v1.6h6v-1.6zm-4 3.2V16h2v-1.6zm4 0V16h6v-1.6z" fill-rule="evenodd"/></svg>
+      Choose difficulty
+    </h2>
+    <div id="levels" class="choices">
+      <button class="choice" data-level="Easy">Easy</button>
+      <button class="choice" data-level="Medium">Medium</button>
+      <button class="choice" data-level="Hard">Hard</button>
+    </div>
+
+    <h2 class="h-ico h-sm">
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2" fill="currentColor"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke-width="3.2"/><circle cx="12" cy="12" r="6.5" stroke-width="3.5"/></svg>
+      AI settings
+    </h2>
+    <div class="select-wrap">
+      <select id="provider">
+        <option value="openai">ChatGPT (OpenAI)</option>
+        <option value="groq">Groq (Llama)</option>
+        <option value="gemini">Gemini (Google)</option>
+        <option value="">No API (demo mode)</option>
+      </select>
+    </div>
+    <input id="apikey" type="password" placeholder="Enter your API key (optional)" autocomplete="off">
+    <input id="model" placeholder="Model name (optional)">
+
+    <button id="btn-start" class="btn-primary" disabled>
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="#fff"><path d="M6 4l14 8-14 8z"/></svg>
+      Start Interview
+    </button>
+  </section>
+
+  <!-- ================= INTERVIEW ================= -->
+  <section id="s-interview" class="panel hidden">
+    <button type="button" class="back-btn" data-back="home" data-confirm="You are leaving the interview midway. Your progress will not be saved. Go back?">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Back to Home
+    </button>
+    <div class="bar"><div id="progress"></div></div>
+    <p id="qmeta"></p>
+    <h2 id="question"></h2>
+    <video id="cam" class="hidden" autoplay muted playsinline></video>
+    <textarea id="answer" rows="6" placeholder="Type your answer here..."></textarea>
+    <div class="row">
+      <button id="btn-mic" class="ghost">Speak answer</button>
+      <button id="btn-cam" class="ghost">Camera on</button>
+      <button id="btn-submit">Submit answer</button>
+    </div>
+    <div id="result" class="hidden">
+      <div id="scores"></div><p id="feedback"></p><p id="followup"></p>
+      <button id="btn-next">Next question</button>
+    </div>
+  </section>
+
+  <!-- ================= REPORT ================= -->
+  <section id="s-report" class="panel hidden">
+    <button type="button" class="back-btn" data-back="home">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Back to Home
+    </button>
+    <h2>Interview report</h2>
+    <div class="overall"><strong id="overall"></strong><span id="rolelabel"></span></div>
+    <canvas id="chart" height="140"></canvas>
+    <h3>Strengths</h3><p id="strengths"></p>
+    <h3>Weaknesses</h3><p id="weaknesses"></p>
+    <h3>How to improve</h3><ul id="tips"></ul>
+    <h3>Question by question</h3><div id="details"></div>
+    <div class="row"><button id="btn-again">New interview</button><button id="btn-back" class="ghost">Interview History</button></div>
+  </section>
+
+  <!-- ================= HISTORY ================= -->
+  <section id="s-history" class="panel hidden">
+    <div class="page-top">
+      <button type="button" class="back-btn" data-back="home">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        Back to Home
+      </button>
+      <button id="btn-new" type="button" class="ghost back-top">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        Back to dashboard
+      </button>
+    </div>
+    <h2>Interview History</h2>
+    <div id="hlist"></div>
+  </section>
+
+  <p id="error" class="error hidden"></p>
+</main>
+
+
+<div id="info-modal" class="modal hidden" aria-hidden="true">
+  <div class="modal-box">
+    <button type="button" class="modal-x" id="modal-x" aria-label="Close">&times;</button>
+    <h3 id="modal-title"></h3>
+    <p id="modal-intro"></p>
+    <ul id="modal-list"></ul>
+    <div class="row">
+      <button type="button" id="modal-cta" class="btn-primary"></button>
+      <button type="button" id="modal-close" class="ghost">Close</button>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="/static/script.js"></script>
+<script>
+  // Copies the username from #who into the sidebar (no changes needed in script.js)
+  (function () {
+    var who = document.getElementById('who'), side = document.getElementById('who-side');
+    function sync() { side.textContent = who.textContent; }
+    new MutationObserver(sync).observe(who, { childList: true, characterData: true, subtree: true });
+    sync();
+  })();
+</script>
+
+<script>
+  // Back buttons trigger the existing buttons (#btn-new-menu / #btn-logout),
+  // so script.js logic (token, state reset) keeps working correctly.
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('.back-btn');
+    if (!b) return;
+    if (b.dataset.back === 'login') {
+      if (confirm('Log out and go back to the Login page?')) document.getElementById('btn-logout').click();
+    } else {
+      if (b.dataset.confirm && !confirm(b.dataset.confirm)) return;
+      document.getElementById('btn-new-menu').click();
+    }
+  });
+</script>
+
+<script>
+  // Sidebar items: show an info popup on click
+  (function () {
+    var INFO = {
+      prepare: {
+        title: 'Prepare for your dream job',
+        intro: 'Practice in a real interview setting. Pick your own role and difficulty.',
+        list: ['Choose your job role (Software Developer, Data Analyst, HR...)',
+               'Start with Easy, then try Medium and Hard',
+               'Answer every question in your own words, with an example',
+               'Do 1-2 interviews every day and track your improvement in the report'],
+        cta: 'Start Interview', go: 'start'
+      },
+      confidence: {
+        title: 'Build your confidence',
+        intro: 'The more you practice, the more confident you become.',
+        list: ['Use "Speak answer" - speaking out loud reduces hesitation',
+               'Turn on "Camera on" to check your body language',
+               'Think through your answer first, then speak clearly and briefly',
+               "Don't worry about mistakes - learn from the follow-up question"],
+        cta: 'Start Practice', go: 'start'
+      },
+      feedback: {
+        title: 'Get AI-powered feedback',
+        intro: 'After every answer, the AI gives you a score and feedback.',
+        list: ['Get a score and a follow-up question for every answer',
+               'A full report at the end with your strengths and weaknesses',
+               'A chart shows your performance at a glance',
+               'The "How to improve" tips tell you what to do next'],
+        cta: 'View Past Reports', go: 'history'
+      }
+    };
+    var modal = document.getElementById('info-modal'), cur = null;
+
+    function close() { modal.classList.add('hidden'); modal.setAttribute('aria-hidden', 'true'); }
+    function open(key) {
+      var d = INFO[key]; if (!d) return; cur = d;
+      document.getElementById('modal-title').textContent = d.title;
+      document.getElementById('modal-intro').textContent = d.intro;
+      document.getElementById('modal-list').innerHTML = d.list.map(function (t) { return '<li>' + t + '</li>'; }).join('');
+      document.getElementById('modal-cta').textContent = d.cta;
+      modal.classList.remove('hidden'); modal.setAttribute('aria-hidden', 'false');
+    }
+
+    document.querySelectorAll('.side-item').forEach(function (el) {
+      function act() {
+        if (el.dataset.info === 'profile') { document.getElementById('btn-hist').click(); return; }
+        open(el.dataset.info);
+      }
+      el.addEventListener('click', act);
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(); } });
+    });
+
+    document.getElementById('modal-cta').addEventListener('click', function () {
+      var go = cur && cur.go; close();
+      if (go === 'history') document.getElementById('btn-hist').click();
+      else { document.getElementById('btn-new-menu').click(); }   // home/setup page
+    });
+    document.getElementById('modal-close').addEventListener('click', close);
+    document.getElementById('modal-x').addEventListener('click', close);
+    modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+  })();
+</script>
+
+<script>
+  // Top-right user menu: open/close handled here so it always works.
+  (function () {
+    var btn = document.getElementById('btn-menu'), panel = document.getElementById('menu-panel');
+    function setOpen(open) {
+      panel.classList.toggle('hidden', !open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    // capture phase: runs before any other click handler on the button, so the menu never double-toggles
+    document.addEventListener('click', function (e) {
+      if (e.target.closest('#btn-menu')) {
+        e.stopImmediatePropagation();
+        setOpen(panel.classList.contains('hidden'));
+      } else if (!e.target.closest('#menu-panel')) {
+        setOpen(false);                       // click outside closes it
+      } else if (e.target.closest('.menu-item')) {
+        setTimeout(function () { setOpen(false); }, 0);   // menu item clicked: run its action, then close
+      }
+    }, true);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+  })();
+</script>
+
+<script>
+  // Highlights the selected role / difficulty (independent of the class names used in script.js)
+  (function () {
+    function clearPicks() {
+      document.querySelectorAll('.is-picked').forEach(function (b) { b.classList.remove('is-picked'); b.removeAttribute('aria-pressed'); });
+    }
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('#roles button, #levels button');
+      if (b) {
+        b.parentElement.querySelectorAll('button').forEach(function (x) { x.classList.remove('is-picked'); x.removeAttribute('aria-pressed'); });
+        b.classList.add('is-picked'); b.setAttribute('aria-pressed', 'true');
+        return;
+      }
+      // a fresh interview / logout starts with nothing selected
+      if (e.target.closest('#btn-new-menu, #btn-logout, #btn-again, #btn-new, #btn-start')) setTimeout(function () {
+        if (!document.getElementById('s-setup').classList.contains('hidden') && e.target.closest('#btn-start')) return;
+        clearPicks();
+      }, 0);
+    });
+  })();
+</script>
+
+<script>
+  // Interview History: tag the generated buttons so they can be styled and Delete sits in the bottom-right corner
+  (function () {
+    var list = document.getElementById('hlist');
+    function decorate() {
+      list.querySelectorAll('button').forEach(function (b) {
+        var t = b.textContent.trim().toLowerCase();
+        if (t === 'delete') {
+          b.classList.add('btn-delete');
+          var card = b.closest('#hlist > *');
+          if (card) card.classList.add('hist-card'); else list.classList.add('hist-flat');
+        } else if (t.indexOf('view') === 0) {
+          b.classList.add('btn-view');
+        }
+      });
+    }
+    new MutationObserver(decorate).observe(list, { childList: true, subtree: true });
+    decorate();
+  })();
+</script>
+</body>
+</html>
